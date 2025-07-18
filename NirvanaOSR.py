@@ -202,7 +202,7 @@ def main_worker(options):
         net = resnet152(pretrained=True,num_classes=options['num_classes'])
         feat_dim = net.feat_dim
     else:
-        raise ValueError('Model not supported in this file. Use NirvanaVIT.py for ViT models.')
+        raise ValueError('Model not supported in this file.')
         
     # Loss
     options.update(
@@ -220,12 +220,6 @@ def main_worker(options):
             Expand=options['Expand']
         )
         
-    # Analyze geometry after criterion creation
-    print("\n" + "="*50)
-    print("ANALYZING CENTER GEOMETRY")
-    print("="*50)
-    geometry_info = criterion.analyze_center_geometry()
-    print(geometry_info)
     
     if use_gpu:
         net = net.cuda()
