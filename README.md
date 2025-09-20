@@ -1,6 +1,6 @@
-# UCDSC: UnCertainty aware Deep Simplex Classifier for Imbalanced Medical Image Datasets
+# UCDSC: Open Set UnCertainty aware Deep Simplex Classifier for Medical Image Datasets
 
-This repository contains the implementation code for the paper "UCDSC: UnCertainty aware Deep Simplex Classifier for Imbalanced Medical Image Datasets".
+This repository contains the implementation code for the paper "UCDSC: Open Set UnCertainty aware Deep Simplex Classifier for Medical Image Datasets".
 
 ## Dataset Setup
 
