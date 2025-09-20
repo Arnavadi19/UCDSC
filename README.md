@@ -29,7 +29,7 @@ python NirvanaOSR.py --dataset dataset-name --dataroot ./data --outf ./results
 | `--lr` | Learning rate | 
 | `--max-epoch` | Maximum training epochs |
 | `--optim` | Optimizer to be used |
-| `--margin` | Margin for hinge loss | 
+| `--margin` | Margin for loss | 
 | `--Expand` | Expand factor of centers |
 | `--uncertainty-weight` | Weight for uncertainty loss |
 | `--outlier-weight` | Weight for outlier triplet loss |
