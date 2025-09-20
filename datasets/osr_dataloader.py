@@ -265,7 +265,7 @@ class DermaMNIST_OSR(object):
 
 class TissueMNIST_OSR(object):
     """Open Set Recognition wrapper for TissueMNIST dataset"""
-    def __init__(self, known,unknown = None, dataroot='./data', use_gpu=True, num_workers=4, batch_size=128):
+    def __init__(self, known,unknown = None, dataroot='./data', use_gpu=True, num_workers=8, batch_size=128):
         self.num_classes = len(known)
         if isinstance(known, dict):
             self.known = known['known']
@@ -333,3 +333,106 @@ class TissueMNIST_OSR(object):
         print(f'TissueMNIST_OSR Train samples: {len(self.train_loader.dataset)}')
         print(f'TissueMNIST_OSR Test samples (known): {len(self.test_loader.dataset)}')
         print(f'TissueMNIST_OSR Test samples (unknown): {len(self.out_loader.dataset)}')
+
+    
+class ASC_OSR(object):
+    """Open Set Recognition wrapper for Augmented Skin Conditions dataset"""
+    def __init__(self, known, unknown=None, dataroot='./data', use_gpu=True, num_workers=4, batch_size=128):
+        self.num_classes = len(known)
+        if isinstance(known, dict):
+            self.known = known['known']
+        else:
+            self.known = known
+            
+        if unknown is not None:
+            self.unknown = unknown
+        else:
+            self.unknown = list(set(range(0, 6)) - set(self.known))  # Fixed: Changed from 8 to 6 classes
+
+        print('ASC_OSR Known classes:', self.known)
+        print('ASC_OSR Unknown classes:', self.unknown)
+
+        # Define transforms for 224x224 images
+        transform = transforms.Compose([
+            transforms.ToPILImage(),  # Convert numpy array to PIL Image
+            transforms.Resize((224, 224)),
+            transforms.RandomCrop(224, padding=20),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomVerticalFlip(),
+            transforms.RandomAffine(degrees=0, translate=(0.05, 0.05), scale=(0.95, 1.05)),
+            transforms.RandomApply([transforms.RandomRotation(15)], p=0.5),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        ])
+
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        ])
+
+        dataset_path = os.path.join(dataroot, 'skin_conditions_dataset.npz')
+        if not os.path.exists(dataset_path):
+            raise FileNotFoundError(f"Skin conditions dataset not found at {dataset_path}")
+        
+        data = np.load(dataset_path)
+        
+        # Create custom dataset classes
+        train_dataset = ASCLoader(
+            data['train_images'], data['train_labels'], transform=transform
+        )
+        test_dataset = ASCLoader(
+            data['test_images'], data['test_labels'], transform=test_transform
+        )
+
+        train_labels = train_dataset.labels.squeeze()
+        print("ASC_OSR Training set class distribution:", np.bincount(train_labels))
+
+        # Filter datasets
+        train_mask = np.isin(train_dataset.labels.squeeze(), self.known)
+        known_test_mask = np.isin(test_dataset.labels.squeeze(), self.known)
+        unknown_test_mask = np.isin(test_dataset.labels.squeeze(), self.unknown)
+
+        # Create data loaders
+        self.train_loader = DataLoader(
+            FilteredDataset(train_dataset, train_mask, self.known), 
+            batch_size=batch_size, shuffle=True,
+            num_workers=num_workers, pin_memory=use_gpu
+        )
+
+        self.test_loader = DataLoader(
+            FilteredDataset(test_dataset, known_test_mask, self.known),
+            batch_size=batch_size, shuffle=False,
+            num_workers=num_workers, pin_memory=use_gpu
+        )
+
+        self.out_loader = DataLoader(
+            FilteredDataset(test_dataset, unknown_test_mask, self.unknown),
+            batch_size=batch_size, shuffle=False,
+            num_workers=num_workers, pin_memory=use_gpu
+        )
+
+        print(f'ASC_OSR Train samples: {len(self.train_loader.dataset)}')
+        print(f'ASC_OSR Test samples (known): {len(self.test_loader.dataset)}')
+        print(f'ASC_OSR Test samples (unknown): {len(self.out_loader.dataset)}')
+
+
+class ASCLoader(Dataset):
+    """Custom dataset loader for .npz format"""
+    def __init__(self, images, labels, transform=None):
+        self.images = images
+        self.labels = labels
+        self.transform = transform
+        
+    def __getitem__(self, index):
+        img = self.images[index]
+        label = self.labels[index]
+        
+        if self.transform is not None:
+            img = self.transform(img)
+            
+        return img, int(label)
+    
+    def __len__(self):
+        return len(self.images)

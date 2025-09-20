@@ -24,5 +24,20 @@ splits_2020 = {
         {'known': [3, 2], 'unknown': [0, 1]},
         {'known': [3, 0], 'unknown': [1, 2]},
         {'known': [3, 1], 'unknown': [0, 2]}
+    ],
+    'asc': [
+        {'known': [0, 1, 2], 'unknown': [3, 4, 5]}, 
+        {'known': [0, 3, 4], 'unknown': [1, 2, 5]},  
+        {'known': [1, 2, 5], 'unknown': [0, 3, 4]},  
+        {'known': [0, 2, 4], 'unknown': [1, 3, 5]}   
     ]
 }
+
+"""Skin Conditions: Class Index → Condition Name
+0 → Acne
+1 → Carcinoma (Skin Cancer)
+2 → Eczema  
+3 → Keratosis
+4 → Milia
+5 → Rosacea
+"""

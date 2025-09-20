@@ -21,7 +21,7 @@ import numpy as np
 from modules.dchs import  NirvanaOpenset_loss
 from Networks.models import classifier32
 from Networks.resnet import resnet50, resnet18, resnet34, resnet101, resnet152
-from datasets.osr_dataloader import Random300K_Images, BloodMNIST_OSR, OCTMnist_OSR, DermaMNIST_OSR, TissueMNIST_OSR
+from datasets.osr_dataloader import Random300K_Images, BloodMNIST_OSR, OCTMnist_OSR, DermaMNIST_OSR, TissueMNIST_OSR, AOD_OSR, ASC_OSR
 from utils import Logger, save_networks, load_networks
 from core import test_ddfm_b9, train_Nirvana_oe, train_Nirvana_oe_reg
 from split import splits_2020 as splits
@@ -32,7 +32,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 parser = argparse.ArgumentParser("Training")
 
 # Dataset
-parser.add_argument('--dataset', type=str, default='bloodmnist', choices=['bloodmnist', 'octmnist', 'dermamnist', 'tissuemnist'], help="Dataset selection")
+parser.add_argument('--dataset', type=str, default='bloodmnist', choices=['bloodmnist', 'octmnist', 'dermamnist', 'tissuemnist', 'asc'], help="Dataset selection")
 parser.add_argument('--dataroot', type=str, default='./data')
 parser.add_argument('--outf', type=str, default='./logs_results', help='Directory to save results')
 # Optimization
@@ -46,6 +46,8 @@ parser.add_argument('--optim', type=str, default='sgd', choices=['sgd', 'rmsprop
 parser.add_argument('--noisy-ratio', type=float, default=0.0, help="noisy ratio for ablation study")
 parser.add_argument('--margin', type=float, default=48.0, help="margin for hinge")
 parser.add_argument('--Expand', default=500, type=int, metavar='N', help='Expand factor of centers')
+parser.add_argument('--uncertainty-weight', type=float, default=5.0, help='Weight for uncertainty regularization loss component')
+parser.add_argument('--outlier-weight', type=float, default=1.0, help='Weight for outlier triplet loss component')
 parser.add_argument('--model', type=str, default='classifier32', help='resnet50, classifier32, resnet18, resnet34, resnet101, resnet152')
 parser.add_argument('--loss', type=str, default='NirvanaOpenset')
 parser.add_argument('--pretrained-model', type=str, default=None,help='Path to your fine-tuned model')
@@ -138,7 +140,24 @@ def main_worker(options):
         trainloader = Data.train_loader
         testloader = Data.test_loader
         outloader = Data.out_loader    
+
+    elif options['dataset'] == 'asc':
+        split_dict = splits[options['dataset']][options['item']]
+        known = split_dict['known']
+        unknown = split_dict['unknown']
+        Data = ASC_OSR(
+            known=known,
+            unknown=unknown,
+            dataroot=options['dataroot'],
+            use_gpu=not options['use_cpu'],
+            batch_size=options['batch_size']
+        )
+        trainloader = Data.train_loader
+        testloader = Data.test_loader
+        outloader = Data.out_loader
         
+        options['img_size'] = 224
+
     else:
         print('No dataset chosen.')
     
@@ -149,14 +168,24 @@ def main_worker(options):
                                     '300K_random_images.npy')
         if not os.path.exists(background_path):
             raise FileNotFoundError(f"Background dataset not found at {background_path}")
-            
+        
+        if options['dataset'] in ['asc']:
+            oe_transform = tf.Compose([
+                tf.Resize((224,224)),
+                tf.RandomCrop(224, padding=20),
+                tf.RandomHorizontalFlip(),
+                tf.ToTensor()
+            ])
+        else:
+            oe_transform = tf.Compose([
+                tf.RandomCrop(32, padding=4),
+                tf.RandomHorizontalFlip(),
+                tf.ToTensor()
+            ])
+
         oe_data = Random300K_Images(
             file_path=background_path,
-            transform=tf.Compose([
-                tf.RandomCrop(32, padding=4),
-                tf.RandomHorizontalFlip(), 
-                tf.ToTensor(),
-            ]),
+            transform=oe_transform,
             extendable=options['noisy_ratio']
         )
         print(f"Loaded background dataset with {len(oe_data)} images")
@@ -165,7 +194,7 @@ def main_worker(options):
             oe_data, 
             batch_size=options['batch_size'], 
             shuffle=True,
-            num_workers=0,
+            num_workers=8,
             drop_last=True
         )
         print(f"Background loader created with {len(trainloader_oe)} batches")
@@ -217,7 +246,9 @@ def main_worker(options):
             feat_dim=options['feat_dim'], 
             precalc_centers=True, 
             margin=options['margin'], 
-            Expand=options['Expand']
+            Expand=options['Expand'],
+            uncertainty_weight=options['uncertainty_weight'],
+            outlier_weight=options['outlier_weight']
         )
         
     

@@ -1,1 +1,149 @@
+# Data and datasets
 data/*
+MedMNIST/*
+datasets/MedMNIST/*
+*.npz
+*.npy
+
+# Notebooks and figures
+*.ipynb
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+figures/
+plots/
+visualizations/
+
+# Model weights and checkpoints
+*.pth
+*.pkl
+*.pt
+models/
+checkpoints/
+weights/
+logs/
+logs_results/
+results/
+output/
+runs/
+
+# Scripts and configs
+*.sh
+*.bat
+slurm-*.out
+job_*.sh
+
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment and configs
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+conda-meta/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Personal/identifying information
+personal/
+private/
+author_info/
+submission_info/
+review_response/
+camera_ready/
+
+# Temporary and cache files
+tmp/
+temp/
+cache/
+.cache/
+*.tmp
+*.temp
+*.log
+*.out
+*.err
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Experiment tracking
+wandb/
+mlruns/
+tensorboard/
+.mlflow/
+
+# Documentation drafts
+draft*/
+paper_drafts/
+manuscript/
+latex/
+*.tex
+*.bib
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+
+# Large files and archives
+*.zip
+*.tar.gz
+*.tar
+*.rar
+*.7z
+
+# Configuration files with paths
+config.yaml
+config.json
+settings.ini
+paths.txt

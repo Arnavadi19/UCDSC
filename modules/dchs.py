@@ -11,7 +11,7 @@ class NirvanaOpenset_loss(nn.Module):
         num_subcenters (int): number of subcenters per class
         feat_dim (int): feature dimension.
     """
-    def __init__(self, num_classes=10, feat_dim=128, precalc_centers=None, margin=48.0, Expand=200, use_uncertainty_reg=True, uncertainty_weight = 5.0):
+    def __init__(self, num_classes=10, feat_dim=128, precalc_centers=None, margin=48.0, Expand=200, use_uncertainty_reg=True, uncertainty_weight = 5.0, outlier_weight=1.0):
         super(NirvanaOpenset_loss, self).__init__()
         self.num_classes = num_classes
         self.num_centers = self.num_classes
@@ -20,6 +20,7 @@ class NirvanaOpenset_loss(nn.Module):
         self.E = Expand
         self.use_uncertainty_reg = use_uncertainty_reg
         self.uncertainty_weight = uncertainty_weight
+        self.outlier_weight = outlier_weight
 
         if(precalc_centers):
             precalculated_centers = FindCenters(self.feat_dim, self.E)
@@ -89,7 +90,6 @@ class NirvanaOpenset_loss(nn.Module):
         # Perform matrix multiplication with tensors of the same dtype
         inlier_distmat.addmm_(x, centers.t(), beta=1, alpha=-2)
         
-        # Continue with remaining calculations
         intraclass_distances = inlier_distmat.gather(dim=1, index=labels.unsqueeze(1)).squeeze()
         intraclass_loss = intraclass_distances.sum() / (batch_size * self.feat_dim * 2.0)
         
@@ -121,8 +121,10 @@ class NirvanaOpenset_loss(nn.Module):
                 outlier_triplet_multi_loss = (1 / (batch_size * batch_size_out * 2.0)) * hinge_part.sum()
             else:
                 outlier_triplet_multi_loss = (1 / (batch_size * batch_size_out * 2.0)) * ((self.margin + (intraclass_distances - outlier_corresponding_multi_distances)).clamp(min=0)).sum()
+            
+            weighted_outlier_loss = self.outlier_weight * outlier_triplet_multi_loss
         
-            return intraclass_loss, interclass_loss_triplet, outlier_triplet_multi_loss, uncertainty_loss
+            return intraclass_loss, interclass_loss_triplet, weighted_outlier_loss, uncertainty_loss
         else:
             return intraclass_loss, interclass_loss_triplet, None, uncertainty_loss
 
